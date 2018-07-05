@@ -1,0 +1,31 @@
+
+{{define "main"}}
+<div class="jumbotron">
+    <h1 class="text-center">Result for image: {{.Filename}}</h1>
+</div>
+<div class="container-fluid">
+    <table>
+        <thead>Label   </thead>
+        <thead>Possibility</thead>
+        <tbody>
+            {{ range $key, $v := .Labels}}
+            <tr>
+                <td>{{ $v.Label}}</td>
+                <td>{{ $v.Probability}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <!-- <div>Label</div>
+    <div>Probility</div> -->
+</div>
+<div>
+    <a class="btn btn-info" href="/input">Back</a>
+</div>
+
+{{end}}
+{{ define "body"}}
+
+{{block "main" .}}{{end}}
+
+{{end}}

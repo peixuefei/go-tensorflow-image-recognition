@@ -1,0 +1,38 @@
+
+{{define "main"}}
+<div class="jumbotron">
+    <h1 class="text-center">Input</h1>
+</div>
+
+<div>
+    <form enctype="multipart/form-data" action="/recognize" method="POST">
+<fieldset>
+    <legend>Image</legend>
+
+    <div>
+        <label for="url">Image URL:</label>
+        <input type="text" class="form-control" name="url" id="url" />
+    </div>
+
+    <div>
+        <label for="image">Picture:</label>
+        <input type="file" id="image" name="image" accept="image/png, image/jpeg" />
+    </div>
+
+</fieldset>
+
+        <!-- <div>
+            <textarea class="form-control" name="image" cols="80" rows="25"></textarea>
+        </div> -->
+        <div>
+            <input class="btn btn-info" type="submit" value="Submit">
+        </div>
+    </form>
+</div>
+{{end}}
+
+{{ define "body"}}
+
+{{block "main" .}}{{end}}
+
+{{end}}
