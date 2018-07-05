@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -10,14 +11,13 @@ import (
 	"os"
 	"sort"
 	"strings"
-  "html/template"
 
 	//"github.com/julienschmidt/httprouter"
+	"crypto/md5"
+	"fmt"
 	tf "github.com/tensorflow/tensorflow/tensorflow/go"
-  "fmt"
-  "time"
-  "crypto/md5"
-  "strconv"
+	"strconv"
+	"time"
 )
 
 type ClassifyResult struct {
@@ -39,18 +39,17 @@ var (
 var tmplView = template.Must(template.New("view").ParseFiles("base.html", "index.html", "view.html"))
 var tmplInput = template.Must(template.New("input").ParseFiles("base.html", "index.html", "input.html"))
 
-
 func main() {
 	if err := loadModel(); err != nil {
 		log.Fatal(err)
 		return
 	}
-  http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-  //http.HandleFunc("/view", viewHandler)
-  http.HandleFunc("/input", inputHandler)
-  http.HandleFunc("/recognize", recognizeHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	//http.HandleFunc("/view", viewHandler)
+	http.HandleFunc("/input", inputHandler)
+	http.HandleFunc("/recognize", recognizeHandler)
 
-  //r := httprouter.New()
+	//r := httprouter.New()
 	//r.POST("/recognize", recognizeHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -89,28 +88,28 @@ func loadModel() error {
 }
 
 func inputHandler(w http.ResponseWriter, r *http.Request) {
-  // http.Redirect(w, r, "/view", http.StatusFound)
-  //var p string
-  tmplInput.ExecuteTemplate(w, "base", nil)
+	// http.Redirect(w, r, "/view", http.StatusFound)
+	//var p string
+	tmplInput.ExecuteTemplate(w, "base", nil)
 }
 
 //func recognizeHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func recognizeHandler(w http.ResponseWriter, r *http.Request) {
 
-  if r.Method == "GET" {
-    crutime := time.Now().Unix()
-    h := md5.New()
-    io.WriteString(h, strconv.FormatInt(crutime, 10))
-    token := fmt.Sprintf("%x", h.Sum(nil))
+	if r.Method == "GET" {
+		crutime := time.Now().Unix()
+		h := md5.New()
+		io.WriteString(h, strconv.FormatInt(crutime, 10))
+		token := fmt.Sprintf("%x", h.Sum(nil))
 
-    t, _ := template.ParseFiles("input.html")
-    t.Execute(w, token)
-  }
-  // Read image
+		t, _ := template.ParseFiles("input.html")
+		t.Execute(w, token)
+	}
+	// Read image
 	imageFile, header, err := r.FormFile("image")
 	// Will contain filename and extension
-  fmt.Println("The image file is:", header.Filename)
-  imageName := strings.Split(header.Filename, ".")
+	fmt.Println("The image file is:", header.Filename)
+	imageName := strings.Split(header.Filename, ".")
 	if err != nil {
 		responseError(w, "Could not read image", http.StatusBadRequest)
 		return
@@ -119,7 +118,7 @@ func recognizeHandler(w http.ResponseWriter, r *http.Request) {
 	var imageBuffer bytes.Buffer
 	// Copy image data to a buffer
 	io.Copy(&imageBuffer, imageFile)
-  fmt.Println("Reading image finish!")
+	fmt.Println("Reading image finish!")
 	// ...
 	// Make tensor
 	tensor, err := makeTensorFromImage(&imageBuffer, imageName[:1][0])
@@ -141,24 +140,24 @@ func recognizeHandler(w http.ResponseWriter, r *http.Request) {
 		responseError(w, "Could not run inference", http.StatusInternalServerError)
 		return
 	}
-  fmt.Println("TF inference running finish!")
+	fmt.Println("TF inference running finish!")
 
 	//re :=&ClassifyResult{
-  //  Filename: header.Filename,
-  //  Labels:   findBestLabels(output[0].Value().([][]float32)[0]),
-  //}
+	//  Filename: header.Filename,
+	//  Labels:   findBestLabels(output[0].Value().([][]float32)[0]),
+	//}
 
-  re :=&ClassifyResult{
-    Filename: header.Filename,
-    Labels:   findBestLabels(output[0].Value().([][]float32)[0]),
-  }
+	re := &ClassifyResult{
+		Filename: header.Filename,
+		Labels:   findBestLabels(output[0].Value().([][]float32)[0]),
+	}
 
-  err = tmplView.ExecuteTemplate(w, "base", re)
-  if err !=nil{
-    responseError(w, "Could not pare html template!", http.StatusInternalServerError)
-  }
+	err = tmplView.ExecuteTemplate(w, "base", re)
+	if err != nil {
+		responseError(w, "Could not pare html template!", http.StatusInternalServerError)
+	}
 
-  // Return best labels
+	// Return best labels
 	//responseJSON(w, ClassifyResult{
 	//	Filename: header.Filename,
 	//	Labels:   findBestLabels(output[0].Value().([][]float32)[0]),
